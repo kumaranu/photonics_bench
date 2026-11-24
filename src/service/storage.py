@@ -64,8 +64,7 @@ class RunStorage:
         # CREATE IF NOT EXISTS makes initialization safe for both first use
         # and later application starts against an existing database.
         with self._connect() as conn:
-            conn.executescript(
-                """
+            conn.executescript("""
                 CREATE TABLE IF NOT EXISTS runs (
                     run_id TEXT PRIMARY KEY,
                     created_at TEXT NOT NULL,
@@ -92,8 +91,7 @@ class RunStorage:
                     recorded_at TEXT NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS idx_readings_run_id ON readings(run_id);
-                """
-            )
+                """)
 
     def create_run(
         self,
