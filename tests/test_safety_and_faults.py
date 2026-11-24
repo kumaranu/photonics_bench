@@ -30,12 +30,21 @@ def test_detector_shows_resonance_dip():
         optical_source=laser, resonance_nm=1550.0, timeout_rate=0.0, corrupt_rate=0.0, rng=rng
     )
 
+    # At 1548 nm, the laser is 2 nm away from the resonance. The detector
+    # remains at its hard-coded -10 dBm baseline with only a small Lorentzian
+    # dip, plus the seeded Gaussian noise.
     laser.set_wavelength_nm(1548.0)
     off_resonance_dbm = det.read_power_dbm()
 
+    # At 1550 nm, the wavelength exactly matches the configured resonance.
+    # The detector model currently hard-codes a 15 dB dip, so the expected
+    # power is the -10 dBm baseline minus 15 dB, or approximately -25 dBm.
     laser.set_wavelength_nm(1550.0)
     on_resonance_dbm = det.read_power_dbm()
 
+    # Approximation accounts for the detector's small simulated Gaussian noise.
+    # Each assertion allows a 0.5 dBm difference from the hard-coded expected
+    # values, rather than requiring exact floating-point equality.
     assert off_resonance_dbm == pytest.approx(-10.0, abs=0.5)
     assert on_resonance_dbm == pytest.approx(-25.0, abs=0.5)
 
