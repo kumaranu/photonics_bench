@@ -150,14 +150,17 @@ Fault rates can also be updated while the service is running with
 
 ## Scope and limitations
 
-This version uses simulated instruments; it does not include physical
-PyVISA/serial drivers, a wavemeter, a detached background sweep runner, or a
+This version uses simulated instrument drivers. The tunable laser and
+photodetector interfaces should be reviewed and extended so each driver includes
+all properties needed for future or physical instrument integration.
+
+The SQLite database is local to the service process and is not a shared or
+remote database. This version does not include a web client; interaction is
+provided through the terminal CLI and HTTP API.
+
+This version does not include physical PyVISA/serial drivers, a wavemeter, or a
 distributed lease manager. A sweep is tied to its streaming HTTP response; if
 the client disconnects, the run is marked aborted.
-
-Authentication is not implemented. The service binds to loopback by default.
-Only bind it to a network interface on a trusted network where that exposure
-is acceptable.
 
 ## Tests
 
