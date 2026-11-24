@@ -47,11 +47,25 @@ class Photodetector:
 
         # Read the true physical state of the coupled optical source
         wl = self._source._wavelength_nm
+
+        # These are hard-coded simulation parameters for now:
+        # - baseline_dbm is the power far from resonance;
+        # - dip_depth_db is the maximum loss at the resonance;
+        # - half_width_nm defines the 0.15 nm FWHM resonance width.
         baseline_dbm = -10.0
         dip_depth_db = 15.0
-        half_width_nm = 0.075  # 0.15 nm FWHM
+        half_width_nm = 0.075
 
+        # Lorentzian is 1 at the exact resonance, producing the full 15 dB
+        # dip, and approaches 0 as the wavelength moves farther away.
         lorentzian = dip_depth_db * (half_width_nm**2 / ((wl - self.resonance_nm) ** 2 + half_width_nm**2))
+
+        # Add small Gaussian measurement noise. For the current simulated
+        # model, readings remain inside the class-level -60 to 10 dBm limits.
         noise = self._rng.gauss(0.0, 0.08)
+
+        # Clamp defensively so future model changes cannot return values outside
+        # the detector range. The MIN/MAX bounds are not reached by this model's
+        # normal -10 dBm baseline and 15 dB maximum dip.
         reading = max(self.MIN_POWER_DBM, min(self.MAX_POWER_DBM, baseline_dbm - lorentzian + noise))
         return round(reading, 4)
