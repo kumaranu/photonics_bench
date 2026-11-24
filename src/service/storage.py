@@ -8,6 +8,10 @@ from typing import Any
 
 
 def _get_git_revision() -> str:
+    # Record which source revision created a run. Falling back to "unknown"
+    # keeps local archives, exported folders, and non-Git installs usable.
+    # This captures only the checked-out commit, not uncommitted worktree changes;
+    # dirty files would therefore not be identified by this revision string.
     try:
         return (
             subprocess.check_output(
@@ -22,6 +26,8 @@ def _get_git_revision() -> str:
 
 @dataclass
 class RunRecord:
+    # This dataclass represents one runs-table row in Python. It is separate
+    # from the database schema but mirrors the metadata stored for a run.
     run_id: str
     created_at: str
     completed_at: str | None
@@ -39,11 +45,15 @@ class RunStorage:
     """SQLite persistence storing full experimental provenance alongside sweep points."""
 
     def __init__(self, db_path: str) -> None:
+        # Create the parent directory for custom database paths, then ensure
+        # both required tables and the reading lookup index exist.
         self.db_path = db_path
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
 
     def _connect(self) -> sqlite3.Connection:
+        # A fresh connection is short-lived and releases its transaction when
+        # the "with" block exits. WAL improves read/write concurrency.
         conn = sqlite3.connect(self.db_path, check_same_thread=False)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL;")
@@ -51,6 +61,8 @@ class RunStorage:
         return conn
 
     def _init_db(self) -> None:
+        # CREATE IF NOT EXISTS makes initialization safe for both first use
+        # and later application starts against an existing database.
         with self._connect() as conn:
             conn.executescript(
                 """
@@ -95,13 +107,20 @@ class RunStorage:
         instruments: dict[str, Any],
         fault_config: dict[str, Any],
     ) -> RunRecord:
+        # Time is captured once so the Python RunRecord and database row receive
+        # the same UTC creation timestamp.
         now = datetime.now(timezone.utc).isoformat()
+        # Provenance is metadata needed to understand how this run was produced:
+        # source revision, instrument configuration, and simulated fault rates.
         provenance = {
             "code_revision": _get_git_revision(),
             "instruments": instruments,
             "fault_config": fault_config,
         }
         with self._connect() as conn:
+            # SQLite has no native dictionary type, so provenance is JSON text.
+            # Question-mark placeholders keep operator/notes values separate
+            # from SQL syntax and prevent SQL injection.
             conn.execute(
                 """
                 INSERT INTO runs (
@@ -122,6 +141,8 @@ class RunStorage:
                     json.dumps(provenance),
                 ),
             )
+        # Return a Python object immediately; the caller can display creation
+        # metadata before measurement readings begin arriving.
         return RunRecord(
             run_id=run_id,
             created_at=now,
@@ -146,6 +167,8 @@ class RunStorage:
         attempts: int,
         error_msg: str | None,
     ) -> dict[str, Any]:
+        # Append-read semantics: one call writes one wavelength result. It is
+        # deliberate that failed readings are stored too, with None power fields.
         now = datetime.now(timezone.utc).isoformat()
         with self._connect() as conn:
             conn.execute(
@@ -157,6 +180,8 @@ class RunStorage:
                 """,
                 (run_id, step_index, target_nm, actual_nm, power_dbm, attempts, error_msg, now),
             )
+        # The same data is returned for the sweep stream's NDJSON point event,
+        # so the database and client receive matching reading metadata.
         return {
             "step_index": step_index,
             "target_nm": target_nm,
@@ -168,6 +193,8 @@ class RunStorage:
         }
 
     def finish_run(self, run_id: str, status: str) -> None:
+        # Finalization is a separate update so the run row can exist before,
+        # during, and after its measurements are recorded.
         now = datetime.now(timezone.utc).isoformat()
         with self._connect() as conn:
             conn.execute(
@@ -176,6 +203,8 @@ class RunStorage:
             )
 
     def list_runs(self, limit: int = 50) -> list[dict[str, Any]]:
+        # This summary query joins readings to calculate both total and valid
+        # point counts, while LEFT JOIN also includes runs that have no readings.
         with self._connect() as conn:
             rows = conn.execute(
                 """
