@@ -7,6 +7,45 @@ The service exposes an HTTP API for instrument status, sweep control, and
 historical results. The `bench` CLI uses that API, and third-party scripts can
 use it directly.
 
+## Architecture
+
+![Photonics Bench architecture](docs/photonics-bench-architecture.svg)
+
+Editable source: [photonics-bench-architecture.drawio](docs/photonics-bench-architecture.drawio)
+
+## Agentic AI Usage
+
+This project was built using an AI-assisted development workflow, combined
+with human architectural oversight and verification.
+
+I defined the core requirements and implementation boundaries:
+
+- Separate classes for a tunable laser and a photodetector.
+- Simulated timeout and corrupt-response fault rates that model expected instrument
+  failures.
+- Independent locking for each instrument, so one instrument's lock is held only
+  for its own operation.
+- Asynchronous operation with a dedicated worker thread per instrument, preventing
+  a slow instrument call from blocking the event loop or another instrument.
+- Reuse of the shared instrument actor for additional instruments through the same
+  actor and subclass patterns.
+- A bench controller that coordinates wavelength sweeps, streams progress and
+  results through FastAPI, and persists completed sweep data in SQLite.
+
+I was new to several FastAPI and asynchronous-programming patterns, even though
+I had encountered similar concepts previously. AI accelerated implementation,
+but I remained responsible for requirements, architectural decisions, and
+reviewing the resulting behavior.
+
+I validated the implementation by running the unit test suite, running sweep
+scenarios, and inspecting the generated SQLite database file. The tests covered
+individual behavior and fault conditions, while sweep runs and database inspection
+confirmed the streamed results and stored run and reading data.
+
+There is substantial scope to test additional scenarios and edge cases. Further
+unit and integration tests would improve coverage across instrument behavior,
+concurrency, API streaming, persistence, and failure recovery.
+
 ## Requirements
 
 - Python 3.11 or newer
@@ -111,14 +150,17 @@ Fault rates can also be updated while the service is running with
 
 ## Scope and limitations
 
-This version uses simulated instruments; it does not include physical
-PyVISA/serial drivers, a wavemeter, a detached background sweep runner, or a
+This version uses simulated instrument drivers. The tunable laser and
+photodetector interfaces should be reviewed and extended so each driver includes
+all properties needed for future or physical instrument integration.
+
+The SQLite database is local to the service process and is not a shared or
+remote database. This version does not include a web client; interaction is
+provided through the terminal CLI and HTTP API.
+
+This version does not include physical PyVISA/serial drivers, a wavemeter, or a
 distributed lease manager. A sweep is tied to its streaming HTTP response; if
 the client disconnects, the run is marked aborted.
-
-Authentication is not implemented. The service binds to loopback by default.
-Only bind it to a network interface on a trusted network where that exposure
-is acceptable.
 
 ## Tests
 
