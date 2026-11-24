@@ -7,6 +7,12 @@ The service exposes an HTTP API for instrument status, sweep control, and
 historical results. The `bench` CLI uses that API, and third-party scripts can
 use it directly.
 
+## Architecture
+
+![Photonics Bench architecture](docs/photonics-bench-architecture.svg)
+
+Editable source: [photonics-bench-architecture.drawio](docs/photonics-bench-architecture.drawio)
+
 ## Requirements
 
 - Python 3.11 or newer

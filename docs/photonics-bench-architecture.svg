@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="540" viewBox="0 0 1400 540" role="img" aria-labelledby="title desc">
+  <title id="title">Photonics Bench Architecture</title>
+  <desc id="desc">CLI and HTTP FastAPI service connected to a sweep controller, instrument actors, simulated instruments, and SQLite storage.</desc>
+  <style>
+    .box { stroke-width: 2; rx: 12; ry: 12; }
+    .label { font-family: Arial, sans-serif; fill: #202020; text-anchor: middle; }
+    .title { font-family: Arial, sans-serif; fill: #202020; text-anchor: middle; font-size: 26px; font-weight: bold; }
+    .heading { font-size: 18px; font-weight: bold; }
+    .text { font-size: 13px; }
+    .arrow { fill: none; stroke: #555555; stroke-width: 3; marker-end: url(#arrowhead); }
+  </style>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#555555"/>
+    </marker>
+  </defs>
+
+  <text x="700" y="38" class="title">Photonics Bench Architecture</text>
+
+  <rect x="40" y="120" width="170" height="180" class="box" fill="#dae8fc" stroke="#6c8ebf"/>
+  <text x="125" y="150" class="label heading">CLI</text>
+  <text x="125" y="175" class="label text">cli.py</text>
+  <text x="125" y="205" class="label text">bench serve</text>
+  <text x="125" y="225" class="label text">bench status</text>
+  <text x="125" y="245" class="label text">bench sweep</text>
+  <text x="125" y="265" class="label text">bench list</text>
+  <text x="125" y="285" class="label text">bench show &lt;RUN_ID&gt;</text>
+
+  <rect x="280" y="100" width="210" height="220" class="box" fill="#d5e8d4" stroke="#82b366"/>
+  <text x="385" y="130" class="label heading">FastAPI Service</text>
+  <text x="385" y="155" class="label text">app.py</text>
+  <text x="385" y="180" class="label text">create_app() · lifespan()</text>
+  <text x="385" y="205" class="label text">GET /health</text>
+  <text x="385" y="225" class="label text">GET /instruments</text>
+  <text x="385" y="245" class="label text">POST /instruments/fault-rates</text>
+  <text x="385" y="265" class="label text">POST /sweeps</text>
+  <text x="385" y="285" class="label text">GET /sweeps</text>
+  <text x="385" y="305" class="label text">GET /sweeps/{run_id}</text>
+
+  <rect x="560" y="100" width="220" height="220" class="box" fill="#fff2cc" stroke="#d6b656"/>
+  <text x="670" y="130" class="label heading">Bench Controller</text>
+  <text x="670" y="155" class="label text">sweep.py</text>
+  <text x="670" y="185" class="label text">BenchController</text>
+  <text x="670" y="210" class="label text">generate_wavelength_grid()</text>
+  <text x="670" y="230" class="label text">validate_sweep_bounds()</text>
+  <text x="670" y="250" class="label text">_measure_point_with_retry()</text>
+  <text x="670" y="270" class="label text">run_sweep_stream()</text>
+  <text x="670" y="290" class="label text">sweep lock · retries · status</text>
+
+  <rect x="850" y="100" width="220" height="220" class="box" fill="#e1d5e7" stroke="#9673a6"/>
+  <text x="960" y="130" class="label heading">Instrument Actors</text>
+  <text x="960" y="155" class="label text">manager.py</text>
+  <text x="960" y="185" class="label text">DeviceStatus</text>
+  <text x="960" y="205" class="label text">InstrumentSnapshot</text>
+  <text x="960" y="225" class="label text">InstrumentActor</text>
+  <text x="960" y="250" class="label text">call() · snapshot() · shutdown()</text>
+  <text x="960" y="275" class="label text">Thread executor · async lock</text>
+  <text x="960" y="295" class="label text">Call timeout · status</text>
+
+  <rect x="1140" y="100" width="220" height="220" class="box" fill="#f5f5f5" stroke="#666666"/>
+  <text x="1250" y="130" class="label heading">Simulated Instruments</text>
+  <text x="1250" y="155" class="label text">laser.py · detector.py</text>
+  <text x="1250" y="185" class="label text">TunableLaser</text>
+  <text x="1250" y="205" class="label text">set_wavelength_nm()</text>
+  <text x="1250" y="225" class="label text">get_wavelength_nm()</text>
+  <text x="1250" y="255" class="label text">Photodetector</text>
+  <text x="1250" y="275" class="label text">read_power_dbm()</text>
+
+  <rect x="560" y="390" width="220" height="120" class="box" fill="#f8cecc" stroke="#b85450"/>
+  <text x="670" y="420" class="label heading">SQLite Storage</text>
+  <text x="670" y="445" class="label text">storage.py</text>
+  <text x="670" y="470" class="label text">RunRecord · RunStorage</text>
+  <text x="670" y="490" class="label text">create_run · append_reading</text>
+  <text x="670" y="500" class="label text">finish_run · list_runs · get_run</text>
+
+  <path d="M210 210 L280 210" class="arrow"/>
+  <path d="M490 210 L560 210" class="arrow"/>
+  <path d="M780 210 L850 210" class="arrow"/>
+  <path d="M1070 210 L1140 210" class="arrow"/>
+  <path d="M670 320 L670 390" class="arrow"/>
+
+  <text x="385" y="350" class="label text">HTTP and NDJSON sweep stream</text>
+</svg>
