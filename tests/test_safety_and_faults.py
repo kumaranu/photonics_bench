@@ -50,11 +50,16 @@ def test_detector_shows_resonance_dip():
 
 
 async def test_stalled_detector_does_not_block_laser_or_health_endpoint(tmp_path):
+    # This subclass replaces the real simulated detector read with a deliberately
+    # blocking method. It lets the test isolate thread/actor isolation without
+    # depending on random transport failures.
     class HangingDetector(Photodetector):
         def read_power_dbm(self) -> float:
             time.sleep(2.0)  # Exceeds service call_timeout_s of 0.25s
             return -10.0
 
+    # Disable laser transport failures and give each instrument call only 250 ms.
+    # max_retries=0 makes the sweep use exactly one measurement attempt.
     laser = TunableLaser(timeout_rate=0.0, corrupt_rate=0.0)
     det = HangingDetector(optical_source=laser)
     storage = RunStorage(str(tmp_path / "test.db"))
@@ -64,26 +69,41 @@ async def test_stalled_detector_does_not_block_laser_or_health_endpoint(tmp_path
     app = create_app(controller=ctrl)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        # Start a 1-point sweep that will hit the hanging detector
+        # create_task starts the HTTP request without waiting for its response.
+        # The start=stop=step combination creates one 1550 nm sweep point.
         sweep_task = asyncio.create_task(
             client.post("/sweeps", json={"start_nm": 1550.0, "stop_nm": 1550.0, "step_nm": 1.0})
         )
+
+        # Allow the sweep task to reach the laser and enter the blocked detector
+        # call. This is a synchronization delay; the remaining assertions prove
+        # that the system remains responsive while the detector is stalled.
         await asyncio.sleep(0.08)
 
-        # While detector is stalled, /health and laser calls must remain responsive
+        # The health endpoint should read actor snapshots rather than waiting on
+        # hardware. monotonic measures elapsed time independently of wall-clock
+        # changes and the sub-200 ms threshold leaves room for normal scheduling.
         t0 = time.monotonic()
         health_resp = await client.get("/health")
         elapsed = time.monotonic() - t0
         assert health_resp.status_code == 200
         assert elapsed < 0.2
 
-        # Laser actor is independently callable while detector thread is blocked
+        # The laser has a separate executor and asyncio lock from the detector.
+        # It should still accept a wavelength query while the detector's worker
+        # thread is sleeping. This also confirms the 1550 nm setpoint succeeded.
         wl = await ctrl.laser.call(laser.get_wavelength_nm)
         assert wl == 1550.0
 
+        # By awaiting the sweep task now, the test waits for the detector actor's
+        # 0.25-second timeout and the sweep's streaming response to complete.
+        # With exactly one failed point and no retries, the run is "partial".
         resp = await sweep_task
         assert resp.status_code == 200
         assert '"status": "partial"' in resp.text
+
+        # Stop the actor executor objects. shutdown(wait=False) does not wait for
+        # the original two-second detector sleep to finish in its worker thread.
         ctrl.shutdown()
 
 
