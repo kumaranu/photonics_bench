@@ -24,8 +24,15 @@ class TunableLaser:
         self._wavelength_nm: float = 1550.0
 
     def _simulate_transport(self) -> None:
+        # Simulate a non-instant hardware call. The first uniform draw is
+        # intentionally discarded, and the second controls the 50-200 ms delay.
         self._rng.uniform(0.05, 0.20)
         time.sleep(self._rng.uniform(0.05, 0.20))
+
+        # Failure bands are probabilities, not guaranteed counts: timeout_rate
+        # covers [0, timeout_rate), then corrupt_rate covers the next band.
+        # For example, 0.05 and 0.02 mean 5% timeouts and 2% corrupt responses;
+        # 93% of calls succeed. Setting either rate to 0 disables that failure.
         roll = self._rng.random()
         if roll < self.timeout_rate:
             raise InstrumentTimeoutError(f"Laser [{self.resource_name}] did not reply")
