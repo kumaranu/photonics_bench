@@ -1,5 +1,6 @@
 import random
 import time
+
 from .base import InstrumentTimeoutError, MalformedResponseError
 from .laser import TunableLaser
 
@@ -39,7 +40,9 @@ class Photodetector:
         if roll < self.timeout_rate:
             raise InstrumentTimeoutError(f"Detector [{self.resource_name}] timed out")
         if roll < self.timeout_rate + self.corrupt_rate:
-            raise MalformedResponseError(f"Detector [{self.resource_name}] unparseable payload: NAN_#?")
+            raise MalformedResponseError(
+                f"Detector [{self.resource_name}] unparseable payload: NAN_#?"
+            )
 
     def read_power_dbm(self) -> float:
         """Read optical power in dBm. Models a flat baseline with a Lorentzian resonance dip."""
@@ -58,7 +61,9 @@ class Photodetector:
 
         # Lorentzian is 1 at the exact resonance, producing the full 15 dB
         # dip, and approaches 0 as the wavelength moves farther away.
-        lorentzian = dip_depth_db * (half_width_nm**2 / ((wl - self.resonance_nm) ** 2 + half_width_nm**2))
+        lorentzian = dip_depth_db * (
+            half_width_nm**2 / ((wl - self.resonance_nm) ** 2 + half_width_nm**2)
+        )
 
         # Add small Gaussian measurement noise. For the current simulated
         # model, readings remain inside the class-level -60 to 10 dBm limits.
@@ -67,5 +72,7 @@ class Photodetector:
         # Clamp defensively so future model changes cannot return values outside
         # the detector range. The MIN/MAX bounds are not reached by this model's
         # normal -10 dBm baseline and 15 dB maximum dip.
-        reading = max(self.MIN_POWER_DBM, min(self.MAX_POWER_DBM, baseline_dbm - lorentzian + noise))
+        reading = max(
+            self.MIN_POWER_DBM, min(self.MAX_POWER_DBM, baseline_dbm - lorentzian + noise)
+        )
         return round(reading, 4)

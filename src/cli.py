@@ -1,6 +1,6 @@
 import json
 import os
-import sys
+
 import httpx
 import typer
 import uvicorn
@@ -57,7 +57,9 @@ def sweep(
     start: float = typer.Option(..., "--start", help="Start wavelength (nm)"),
     stop: float = typer.Option(..., "--stop", help="Stop wavelength (nm)"),
     step: float = typer.Option(0.1, "--step", help="Step size (nm)"),
-    operator: str = typer.Option(os.environ.get("USER", "researcher"), "--operator", help="Operator name"),
+    operator: str = typer.Option(
+        os.environ.get("USER", "researcher"), "--operator", help="Operator name"
+    ),
     notes: str = typer.Option("", "--notes", help="Run notes/context"),
     url: str = typer.Option(DEFAULT_URL, "--url", help="Service base URL"),
 ) -> None:
@@ -74,7 +76,11 @@ def sweep(
             with client.stream("POST", f"{url}/sweeps", json=payload) as resp:
                 if resp.status_code != 200:
                     body = resp.read().decode("utf-8", errors="replace")
-                    typer.secho(f"Sweep rejected ({resp.status_code}): {body}", fg=typer.colors.RED, err=True)
+                    typer.secho(
+                        f"Sweep rejected ({resp.status_code}): {body}",
+                        fg=typer.colors.RED,
+                        err=True,
+                    )
                     raise typer.Exit(code=1)
 
                 for line in resp.iter_lines():
@@ -87,10 +93,18 @@ def sweep(
                             f"Started Run ID: {event['run_id']} ({event['total_points']} points)",
                             fg=typer.colors.CYAN,
                         )
-                        typer.echo(f"{'IDX':<5} {'TARGET (nm)':<13} {'ACTUAL (nm)':<13} {'POWER (dBm)':<13} {'TRIES':<6} {'NOTE'}")
+                        typer.echo(
+                            f"{'IDX':<5} {'TARGET (nm)':<13} {'ACTUAL (nm)':<13} {'POWER (dBm)':<13} {'TRIES':<6} {'NOTE'}"
+                        )
                     elif etype == "point":
-                        power = f"{event['power_dbm']:.4f}" if event["power_dbm"] is not None else "FAILED"
-                        actual = f"{event['actual_nm']:.4f}" if event["actual_nm"] is not None else "-"
+                        power = (
+                            f"{event['power_dbm']:.4f}"
+                            if event["power_dbm"] is not None
+                            else "FAILED"
+                        )
+                        actual = (
+                            f"{event['actual_nm']:.4f}" if event["actual_nm"] is not None else "-"
+                        )
                         note = event.get("error_msg") or ""
                         color = typer.colors.RED if event["power_dbm"] is None else None
                         row = f"{event['step_index']:<5} {event['target_nm']:<13.4f} {actual:<13} {power:<13} {event['attempts']:<6} {note}"
@@ -99,7 +113,9 @@ def sweep(
                         typer.secho(
                             f"\nRun {event['run_id']} finished: status={event['status']}, "
                             f"failed_points={event['failed_points']}/{event['total_points']}",
-                            fg=typer.colors.GREEN if event["status"] == "completed" else typer.colors.YELLOW,
+                            fg=typer.colors.GREEN
+                            if event["status"] == "completed"
+                            else typer.colors.YELLOW,
                         )
     except httpx.HTTPError as exc:
         typer.secho(f"Connection error: {exc}", fg=typer.colors.RED, err=True)
@@ -119,12 +135,16 @@ def list_runs(
         typer.echo("No runs recorded yet.")
         return
 
-    typer.echo(f"{'RUN ID':<38} {'CREATED (UTC)':<22} {'RANGE (nm)':<18} {'POINTS':<9} {'STATUS':<11} {'OPERATOR'}")
+    typer.echo(
+        f"{'RUN ID':<38} {'CREATED (UTC)':<22} {'RANGE (nm)':<18} {'POINTS':<9} {'STATUS':<11} {'OPERATOR'}"
+    )
     typer.echo("-" * 112)
     for r in runs:
         rng = f"{r['start_nm']:.1f}-{r['stop_nm']:.1f}"
         pts = f"{r['valid_points']}/{r['point_count']}"
-        typer.echo(f"{r['run_id']:<38} {r['created_at'][:19]:<22} {rng:<18} {pts:<9} {r['status']:<11} {r['operator']}")
+        typer.echo(
+            f"{r['run_id']:<38} {r['created_at'][:19]:<22} {rng:<18} {pts:<9} {r['status']:<11} {r['operator']}"
+        )
 
 
 @app.command()
@@ -146,10 +166,14 @@ def show(
     typer.echo(f"Operator:   {data['operator']}")
     typer.echo(f"Notes:      {data['notes'] or '-'}")
     typer.echo(f"Status:     {data['status']}")
-    typer.echo(f"Sweep:      {data['start_nm']} -> {data['stop_nm']} nm (step {data['step_nm']} nm)")
+    typer.echo(
+        f"Sweep:      {data['start_nm']} -> {data['stop_nm']} nm (step {data['step_nm']} nm)"
+    )
     typer.echo(f"Provenance: {json.dumps(data['provenance'])}")
     typer.echo("\nReadings:")
-    typer.echo(f"{'IDX':<5} {'TARGET (nm)':<13} {'ACTUAL (nm)':<13} {'POWER (dBm)':<13} {'TRIES':<6} {'ERROR'}")
+    typer.echo(
+        f"{'IDX':<5} {'TARGET (nm)':<13} {'ACTUAL (nm)':<13} {'POWER (dBm)':<13} {'TRIES':<6} {'ERROR'}"
+    )
     for pt in data["readings"]:
         power = f"{pt['power_dbm']:.4f}" if pt["power_dbm"] is not None else "FAILED"
         actual = f"{pt['actual_nm']:.4f}" if pt["actual_nm"] is not None else "-"
