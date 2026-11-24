@@ -1,5 +1,6 @@
 import random
 import time
+
 from .base import InstrumentTimeoutError, MalformedResponseError, SafetyLimitError
 
 
@@ -37,7 +38,9 @@ class TunableLaser:
         if roll < self.timeout_rate:
             raise InstrumentTimeoutError(f"Laser [{self.resource_name}] did not reply")
         if roll < self.timeout_rate + self.corrupt_rate:
-            raise MalformedResponseError(f"Laser [{self.resource_name}] returned garbled frame: \\xff\\xfeERR")
+            raise MalformedResponseError(
+                f"Laser [{self.resource_name}] returned garbled frame: \\xff\\xfeERR"
+            )
 
     def set_wavelength_nm(self, wavelength_nm: float) -> float:
         """Set laser output wavelength in nanometers. Enforces hardware safety bounds."""

@@ -10,7 +10,9 @@ from typing import Any
 def _get_git_revision() -> str:
     try:
         return (
-            subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL)
+            subprocess.check_output(
+                ["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL
+            )
             .decode("utf-8")
             .strip()
         )

@@ -42,7 +42,9 @@ class BenchController:
     ) -> None:
         self.laser_driver = laser
         self.detector_driver = detector
-        self.laser = InstrumentActor("laser", laser.resource_name, laser.serial_number, laser, call_timeout_s)
+        self.laser = InstrumentActor(
+            "laser", laser.resource_name, laser.serial_number, laser, call_timeout_s
+        )
         self.detector = InstrumentActor(
             "detector", detector.resource_name, detector.serial_number, detector, call_timeout_s
         )
@@ -67,7 +69,9 @@ class BenchController:
                 )
         return grid
 
-    async def _measure_point_with_retry(self, target_nm: float) -> tuple[float | None, float | None, int, str | None]:
+    async def _measure_point_with_retry(
+        self, target_nm: float
+    ) -> tuple[float | None, float | None, int, str | None]:
         """
         Commands laser and reads detector with bounded retries.
         Never lets a single flaky reading crash the entire sweep.
@@ -124,15 +128,36 @@ class BenchController:
                 fault_config=fault_cfg,
             )
 
-            logger.info("Started sweep %s (%.3f -> %.3f nm, step %.3f nm)", run_id, start_nm, stop_nm, step_nm)
-            yield json.dumps({"type": "started", "run_id": run_id, "total_points": len(grid), "created_at": record.created_at}) + "\n"
+            logger.info(
+                "Started sweep %s (%.3f -> %.3f nm, step %.3f nm)",
+                run_id,
+                start_nm,
+                stop_nm,
+                step_nm,
+            )
+            yield (
+                json.dumps(
+                    {
+                        "type": "started",
+                        "run_id": run_id,
+                        "total_points": len(grid),
+                        "created_at": record.created_at,
+                    }
+                )
+                + "\n"
+            )
 
             failed_points = 0
             final_status = "completed"
 
             try:
                 for idx, target_nm in enumerate(grid):
-                    actual_nm, power_dbm, attempts, error_msg = await self._measure_point_with_retry(target_nm)
+                    (
+                        actual_nm,
+                        power_dbm,
+                        attempts,
+                        error_msg,
+                    ) = await self._measure_point_with_retry(target_nm)
                     if power_dbm is None:
                         failed_points += 1
                     point = self.storage.append_reading(
@@ -155,17 +180,25 @@ class BenchController:
             finally:
                 self.storage.finish_run(run_id, final_status)
                 self.active_run_id = None
-                logger.info("Finished sweep %s with status=%s (failed_points=%d)", run_id, final_status, failed_points)
+                logger.info(
+                    "Finished sweep %s with status=%s (failed_points=%d)",
+                    run_id,
+                    final_status,
+                    failed_points,
+                )
 
-            yield json.dumps(
-                {
-                    "type": "complete",
-                    "run_id": run_id,
-                    "status": final_status,
-                    "total_points": len(grid),
-                    "failed_points": failed_points,
-                }
-            ) + "\n"
+            yield (
+                json.dumps(
+                    {
+                        "type": "complete",
+                        "run_id": run_id,
+                        "status": final_status,
+                        "total_points": len(grid),
+                        "failed_points": failed_points,
+                    }
+                )
+                + "\n"
+            )
 
     def shutdown(self) -> None:
         self.laser.shutdown()

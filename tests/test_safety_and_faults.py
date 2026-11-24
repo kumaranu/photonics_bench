@@ -1,6 +1,7 @@
 import asyncio
 import random
 import time
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -25,7 +26,9 @@ def test_laser_rejects_out_of_range_before_io():
 def test_detector_shows_resonance_dip():
     rng = random.Random(42)
     laser = TunableLaser(timeout_rate=0.0, corrupt_rate=0.0, rng=rng)
-    det = Photodetector(optical_source=laser, resonance_nm=1550.0, timeout_rate=0.0, corrupt_rate=0.0, rng=rng)
+    det = Photodetector(
+        optical_source=laser, resonance_nm=1550.0, timeout_rate=0.0, corrupt_rate=0.0, rng=rng
+    )
 
     laser.set_wavelength_nm(1548.0)
     off_resonance_dbm = det.read_power_dbm()
@@ -46,7 +49,9 @@ async def test_stalled_detector_does_not_block_laser_or_health_endpoint(tmp_path
     laser = TunableLaser(timeout_rate=0.0, corrupt_rate=0.0)
     det = HangingDetector(optical_source=laser)
     storage = RunStorage(str(tmp_path / "test.db"))
-    ctrl = BenchController(laser=laser, detector=det, storage=storage, call_timeout_s=0.25, max_retries=0)
+    ctrl = BenchController(
+        laser=laser, detector=det, storage=storage, call_timeout_s=0.25, max_retries=0
+    )
     app = create_app(controller=ctrl)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -88,7 +93,9 @@ async def test_concurrent_sweep_returns_409_conflict(tmp_path):
         await asyncio.sleep(0.1)
 
         # Second sweep arriving mid-run must get 409 Conflict
-        r2 = await client.post("/sweeps", json={"start_nm": 1550.0, "stop_nm": 1551.0, "step_nm": 0.5})
+        r2 = await client.post(
+            "/sweeps", json={"start_nm": 1550.0, "stop_nm": 1551.0, "step_nm": 0.5}
+        )
         assert r2.status_code == 409
 
         r1 = await t1

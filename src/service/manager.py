@@ -32,7 +32,9 @@ class InstrumentActor:
       2. A stalled device never blocks the event loop or other instruments.
     """
 
-    def __init__(self, name: str, resource: str, serial_number: str, driver: object, timeout_s: float = 1.0) -> None:
+    def __init__(
+        self, name: str, resource: str, serial_number: str, driver: object, timeout_s: float = 1.0
+    ) -> None:
         self.name = name
         self.resource = resource
         self.serial_number = serial_number
