@@ -38,9 +38,7 @@ def status(url: str = typer.Option(DEFAULT_URL, "--url", help="Service base URL"
         color = (
             typer.colors.GREEN
             if st == "connected"
-            else typer.colors.YELLOW
-            if st == "busy"
-            else typer.colors.RED
+            else typer.colors.YELLOW if st == "busy" else typer.colors.RED
         )
         line = (
             f"{inst['name']:<12} "
@@ -113,9 +111,11 @@ def sweep(
                         typer.secho(
                             f"\nRun {event['run_id']} finished: status={event['status']}, "
                             f"failed_points={event['failed_points']}/{event['total_points']}",
-                            fg=typer.colors.GREEN
-                            if event["status"] == "completed"
-                            else typer.colors.YELLOW,
+                            fg=(
+                                typer.colors.GREEN
+                                if event["status"] == "completed"
+                                else typer.colors.YELLOW
+                            ),
                         )
     except httpx.HTTPError as exc:
         typer.secho(f"Connection error: {exc}", fg=typer.colors.RED, err=True)
