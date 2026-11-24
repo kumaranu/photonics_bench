@@ -13,6 +13,39 @@ use it directly.
 
 Editable source: [photonics-bench-architecture.drawio](docs/photonics-bench-architecture.drawio)
 
+## Agentic AI Usage
+
+This project was built using an AI-assisted development workflow, combined
+with human architectural oversight and verification.
+
+I defined the core requirements and implementation boundaries:
+
+- Separate classes for a tunable laser and a photodetector.
+- Simulated timeout and corrupt-response fault rates that model expected instrument
+  failures.
+- Independent locking for each instrument, so one instrument's lock is held only
+  for its own operation.
+- Asynchronous operation with a dedicated worker thread per instrument, preventing
+  a slow instrument call from blocking the event loop or another instrument.
+- Reuse of the shared instrument actor for additional instruments through the same
+  actor and subclass patterns.
+- A bench controller that coordinates wavelength sweeps, streams progress and
+  results through FastAPI, and persists completed sweep data in SQLite.
+
+I was new to several FastAPI and asynchronous-programming patterns, even though
+I had encountered similar concepts previously. AI accelerated implementation,
+but I remained responsible for requirements, architectural decisions, and
+reviewing the resulting behavior.
+
+I validated the implementation by running the unit test suite, running sweep
+scenarios, and inspecting the generated SQLite database file. The tests covered
+individual behavior and fault conditions, while sweep runs and database inspection
+confirmed the streamed results and stored run and reading data.
+
+There is substantial scope to test additional scenarios and edge cases. Further
+unit and integration tests would improve coverage across instrument behavior,
+concurrency, API streaming, persistence, and failure recovery.
+
 ## Requirements
 
 - Python 3.11 or newer
